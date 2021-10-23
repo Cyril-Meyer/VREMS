@@ -29,7 +29,7 @@ def render_segmentation(image,
     if not glfw.init():
         return
     # todo : resizable
-    glfw.window_hint(glfw.RESIZABLE, GL_FALSE)
+    glfw.window_hint(glfw.RESIZABLE, GL_TRUE)
     glfw.window_hint(glfw.SAMPLES, 8)
     w_width, w_height = 1000, 800
     window = glfw.create_window(w_width, w_height, "VREMS", None, None)
@@ -105,7 +105,8 @@ def render_segmentation(image,
 
     # camera
     view = place_camera(image.shape[0], image.shape[1], image.shape[2])
-    projection = matrix44.create_perspective_projection_matrix(45.0, w_width / w_height, 10, 3000.0)
+    projection = get_projection(image.shape[0], image.shape[1], image.shape[2], w_width / w_height)
+    # projection = matrix44.create_perspective_projection_matrix(60.0, w_width / w_height, 10, 3000.0)
 
     # voxel shader uniforms
     glUseProgram(voxel_shader)
@@ -165,7 +166,9 @@ def render_segmentation(image,
             rot = matrix44.create_from_y_rotation(0.2 * glfw.get_time())
             model = matrix44.create_from_translation(Vector3([0.0, 0.0, 0.0]))
             model = matrix44.multiply(model, rot)
-
+            x_cap, y_cap, width_cap, height_cap = glGetDoublev(GL_VIEWPORT)
+            view = place_camera(image.shape[0], image.shape[1], image.shape[2])
+            projection = get_projection(image.shape[0], image.shape[1], image.shape[2], width_cap / height_cap)
             glBindTexture(GL_TEXTURE_2D, texture)
             image_data = image[:, count - countdown + 1, :]
             image_data = image_data.flatten().astype(np.float32)
@@ -175,13 +178,17 @@ def render_segmentation(image,
             glActiveTexture(GL_TEXTURE0)
             glBindVertexArray(VAOS)
             glBindTexture(GL_TEXTURE_2D, texture)
+            glUniformMatrix4fv(view_loc_slice, 1, GL_FALSE, view)
             glUniformMatrix4fv(model_loc_slice, 1, GL_FALSE, model)
+            glUniformMatrix4fv(proj_loc_slice, 1, GL_FALSE, projection)
             glUniform1f(max_height_loc_slice, count - countdown)
             glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, None)
             glBindTexture(GL_TEXTURE_2D, 0)
 
             glUseProgram(voxel_shader)
             glUniformMatrix4fv(model_loc_voxel, 1, GL_FALSE, model)
+            glUniformMatrix4fv(view_loc_voxel, 1, GL_FALSE, view)
+            glUniformMatrix4fv(proj_loc_voxel, 1, GL_FALSE, projection)
             glUniform1f(max_height_loc_voxel, count)
 
             # draw each label
@@ -241,11 +248,16 @@ def window_resize(window, width, height):
     return
 
 def place_camera(imageX, imageY, imageZ):
-	distance = 2 * (imageX if imageX > imageZ else imageZ)
-	camera_pos = Vector3([0.0, imageY * 0.8, -distance])
+	# max_dim
+	height = 0.65
+	diag = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2) 
+	# distance = 2 * (imageX if imageX > imageZ else imageZ)
+	camera_pos = Vector3([0.0, imageY * height, 1.4 * -diag])
 	camera_target = Vector3([0.0, 0.0, 0.0])
 	camera_front = vector.normalise(camera_target - camera_pos)
 
 	return matrix44.create_look_at(camera_pos, camera_pos + camera_front, Vector3([0.0, 1.0, 0.0]))
 
-
+def get_projection(imageX, imageY, imageZ, ratio):
+    max_dist = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2) 
+    return matrix44.create_perspective_projection_matrix(45.0, ratio, 10, max_dist * 2)
