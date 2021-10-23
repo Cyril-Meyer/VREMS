@@ -2,7 +2,7 @@ import skimage.morphology
 
 
 def get_contours(label):
-    return skimage.morphology.binary_erosion(label, skimage.morphology.ball(1))
+    return label - skimage.morphology.binary_erosion(label, skimage.morphology.ball(1))
 
 
 def print_stack_info(stack):
