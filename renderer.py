@@ -15,7 +15,8 @@ def render_segmentation(image,
                         background_color=(0.15, 0.15, 0.15, 1.0),
                         capture=None,
                         output=None,
-                        view_distance=1.5):
+                        view_distance=1.5,
+                        only_image=False):
     # capture = None : no capture
     # capture = 0 : capture each frame as a png
     # capture > 0 : capture N frame in a video
@@ -53,7 +54,6 @@ def render_segmentation(image,
     texbox_shader = shader.compile_shader("shaders/texbox_vertex_shader.vs",
                                          "shaders/texbox_frag_shader.fs")
 
-
     # slice plane
     slice_vertices = [0.0, 0.0, 0.0, 0.0, 0.0,
                 0.0, 0.0, image.shape[2], 1.0, 0.0,
@@ -64,8 +64,6 @@ def render_segmentation(image,
     slice_indices = [0, 1, 2,
                0, 2, 3]
     slice_indices = np.array(slice_indices, dtype=np.uint32)
-
-
 
     # geometry data
     VAOS = glGenVertexArrays(1)
@@ -87,16 +85,13 @@ def render_segmentation(image,
     glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, slice_vertices.itemsize * 5, ctypes.c_void_p(12))
     glEnableVertexAttribArray(texCoord)
 
-
-
-
     texbox0_vertices = np.array([
         0.0, 0.0, 0.0,  0.0, 0.0,  
         0.0, 0.0, image.shape[2],  1.0, 0.0,
         0.0, image.shape[1], image.shape[2],  1.0, 1.0,
         0.0, image.shape[1], 0.0,  0.0, 1.0
     ], dtype=np.float32)
-    texbox0_indices = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
+
     texbox1_vertices = np.array([
         0.0, 0.0, image.shape[2],  0.0, 0.0,  
         image.shape[0], 0.0, image.shape[2],  1.0, 0.0,
@@ -122,73 +117,74 @@ def render_segmentation(image,
     texCoord_texbox = glGetAttribLocation(texbox_shader, "inTexCoord")
 
 
-    VAO_texbox0 = glGenVertexArrays(1)
-    glBindVertexArray(VAO_texbox0)
+    if only_image:
+        VAO_texbox0 = glGenVertexArrays(1)
+        glBindVertexArray(VAO_texbox0)
 
-    VBO_texbox0 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox0)
-    glBufferData(GL_ARRAY_BUFFER, texbox0_vertices.itemsize * len(texbox0_vertices), texbox0_vertices, GL_STATIC_DRAW)
+        VBO_texbox0 = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox0)
+        glBufferData(GL_ARRAY_BUFFER, texbox0_vertices.itemsize * len(texbox0_vertices), texbox0_vertices, GL_STATIC_DRAW)
 
-    EBO_texbox0 = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_texbox0)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, texbox0_indices.itemsize * len(texbox0_indices), texbox0_indices, GL_STATIC_DRAW)
+        EBO_texbox0 = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_texbox0)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
 
-    glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position_texbox)
+        glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position_texbox)
 
-    glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5, ctypes.c_void_p(12))
-    glEnableVertexAttribArray(texCoord_texbox)
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(texCoord_texbox)
 
-    VAO_texbox1 = glGenVertexArrays(1)
-    glBindVertexArray(VAO_texbox1)
+        VAO_texbox1 = glGenVertexArrays(1)
+        glBindVertexArray(VAO_texbox1)
 
-    VBO_texbox1 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox1)
-    glBufferData(GL_ARRAY_BUFFER, texbox1_vertices.itemsize * len(texbox1_vertices), texbox1_vertices, GL_STATIC_DRAW)
+        VBO_texbox1 = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox1)
+        glBufferData(GL_ARRAY_BUFFER, texbox1_vertices.itemsize * len(texbox1_vertices), texbox1_vertices, GL_STATIC_DRAW)
 
-    EBO_texbox1 = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        EBO_texbox1 = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
 
-    glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position_texbox)
+        glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position_texbox)
 
-    glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5, ctypes.c_void_p(12))
-    glEnableVertexAttribArray(texCoord_texbox)
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(texCoord_texbox)
 
-    VAO_texbox2 = glGenVertexArrays(1)
-    glBindVertexArray(VAO_texbox2)
+        VAO_texbox2 = glGenVertexArrays(1)
+        glBindVertexArray(VAO_texbox2)
 
-    VBO_texbox2 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox2)
-    glBufferData(GL_ARRAY_BUFFER, texbox2_vertices.itemsize * len(texbox2_vertices), texbox2_vertices, GL_STATIC_DRAW)
+        VBO_texbox2 = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox2)
+        glBufferData(GL_ARRAY_BUFFER, texbox2_vertices.itemsize * len(texbox2_vertices), texbox2_vertices, GL_STATIC_DRAW)
 
-    EBO_texbox2 = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        EBO_texbox2 = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
 
-    glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position_texbox)
+        glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position_texbox)
 
-    glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5, ctypes.c_void_p(12))
-    glEnableVertexAttribArray(texCoord_texbox)
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(texCoord_texbox)
 
-    VAO_texbox3 = glGenVertexArrays(1)
-    glBindVertexArray(VAO_texbox3)
+        VAO_texbox3 = glGenVertexArrays(1)
+        glBindVertexArray(VAO_texbox3)
 
-    VBO_texbox3 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox3)
-    glBufferData(GL_ARRAY_BUFFER, texbox3_vertices.itemsize * len(texbox3_vertices), texbox3_vertices, GL_STATIC_DRAW)
+        VBO_texbox3 = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox3)
+        glBufferData(GL_ARRAY_BUFFER, texbox3_vertices.itemsize * len(texbox3_vertices), texbox3_vertices, GL_STATIC_DRAW)
 
-    EBO_texbox3 = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        EBO_texbox3 = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
 
-    glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position_texbox)
+        glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position_texbox)
 
-    glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5, ctypes.c_void_p(12))
-    glEnableVertexAttribArray(texCoord_texbox)
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(texCoord_texbox)
 
     array_nb_voxels = []
     array_vertex_array_object = []
@@ -262,6 +258,55 @@ def render_segmentation(image,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
+    if only_image:
+        texture0 = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture0)
+        # set the texture wrapping parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        # set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        image_data = image[:, :, 0]
+        image_data = image_data.flatten().astype(np.float32)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+
+        texture1 = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture1)
+        # set the texture wrapping parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        # set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        image_data = image[:, :, 0]
+        image_data = image_data.flatten().astype(np.float32)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+
+        texture2 = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture2)
+        # set the texture wrapping parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        # set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        image_data = image[:, :, 0]
+        image_data = image_data.flatten().astype(np.float32)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+
+        texture3 = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture3)
+        # set the texture wrapping parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        # set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        image_data = image[:, :, 0]
+        image_data = image_data.flatten().astype(np.float32)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+
     # load image
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_BLEND)
@@ -321,20 +366,25 @@ def render_segmentation(image,
                             labels_colors[i][3])
                 glDrawArrays(GL_POINTS, 0, array_nb_voxels[i])
 
-
-            glUseProgram(texbox_shader)
-            glUniformMatrix4fv(model_loc_texbox, 1, GL_FALSE, model)
-            glUniformMatrix4fv(view_loc_texbox, 1, GL_FALSE, view)
-            glUniformMatrix4fv(proj_loc_texbox, 1, GL_FALSE, projection)
-            glUniform1f(max_height_loc_texbox,  count - countdown)
-            glBindVertexArray(VAO_texbox0)
-            glDrawElements(GL_TRIANGLES, len(texbox0_indices), GL_UNSIGNED_INT, None)
-            glBindVertexArray(VAO_texbox1)
-            glDrawElements(GL_TRIANGLES, len(texbox0_indices), GL_UNSIGNED_INT, None)
-            glBindVertexArray(VAO_texbox2)
-            glDrawElements(GL_TRIANGLES, len(texbox0_indices), GL_UNSIGNED_INT, None)
-            glBindVertexArray(VAO_texbox3)
-            glDrawElements(GL_TRIANGLES, len(texbox0_indices), GL_UNSIGNED_INT, None)
+            if only_image:
+                glUseProgram(texbox_shader)
+                glUniformMatrix4fv(model_loc_texbox, 1, GL_FALSE, model)
+                glUniformMatrix4fv(view_loc_texbox, 1, GL_FALSE, view)
+                glUniformMatrix4fv(proj_loc_texbox, 1, GL_FALSE, projection)
+                # glUniform1f(max_height_loc_texbox,  count - countdown)
+                glUniform1f(max_height_loc_texbox, count)
+                glBindVertexArray(VAO_texbox0)
+                glBindTexture(GL_TEXTURE_2D, texture0)
+                glDrawElements(GL_TRIANGLES, len(slice_indices), GL_UNSIGNED_INT, None)
+                glBindVertexArray(VAO_texbox1)
+                glBindTexture(GL_TEXTURE_2D, texture1)
+                glDrawElements(GL_TRIANGLES, len(slice_indices), GL_UNSIGNED_INT, None)
+                glBindVertexArray(VAO_texbox2)
+                glBindTexture(GL_TEXTURE_2D, texture2)
+                glDrawElements(GL_TRIANGLES, len(slice_indices), GL_UNSIGNED_INT, None)
+                glBindVertexArray(VAO_texbox3)
+                glBindTexture(GL_TEXTURE_2D, texture3)
+                glDrawElements(GL_TRIANGLES, len(slice_indices), GL_UNSIGNED_INT, None)
 
 
             # capture system
