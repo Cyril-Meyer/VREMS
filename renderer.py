@@ -3,11 +3,12 @@ import numpy as np
 import glfw
 from OpenGL.GL import *
 from pyrr import matrix44, Matrix44, Vector3
+from PIL import Image
 
 import shader
 
 
-def render_segmentation(image, labels, labels_colors):
+def render_segmentation(image, labels, labels_colors, capture_folder=None):
     scene_center = [image.shape[0] / 2, image.shape[1] / 2, image.shape[2] / 2]
 
     # initialization of GLFW
@@ -146,7 +147,9 @@ def render_segmentation(image, labels, labels_colors):
     countdown = 1
     resave = True
     redisplay = True
+    frame_n = 0
     while not glfw.window_should_close(window):
+        frame_n += 1
         if redisplay:
             # redisplay = False
             # import time
@@ -190,6 +193,10 @@ def render_segmentation(image, labels, labels_colors):
                             labels_colors[i][3])
                 glDrawArrays(GL_POINTS, 0, array_nb_voxels[i])
 
+            if capture_folder is not None:
+                filename = capture_folder + "/" + str(frame_n).zfill(8) + ".png"
+                save_frame(filename)
+
             glfw.swap_buffers(window)
             count += int(count < image.shape[1] - 1)
             countdown += int((count >= image.shape[1] - 1) and (countdown <= image.shape[1] - 1))
@@ -207,4 +214,21 @@ def window_resize(window, width, height):
         size = width
 
     glViewport(0, 0, width, height)
+
+    return
+
+
+def save_frame(filename):
+    x, y, width, height = glGetDoublev(GL_VIEWPORT)
+    width, height = int(width), int(height)
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+    # global glblFBO
+    # glBindFramebuffer(GL_FRAMEBUFFER, glblFBO)
+    data = glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE)
+    # glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    image = Image.frombytes("RGB", (width, height), data)
+    image = image.transpose(Image.FLIP_TOP_BOTTOM)
+    image.save(filename, "PNG")
+
     return
