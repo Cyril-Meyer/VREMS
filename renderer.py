@@ -14,7 +14,8 @@ def render_segmentation(image,
                         labels_colors,
                         background_color=(0.15, 0.15, 0.15, 1.0),
                         capture=None,
-                        output=None):
+                        output=None,
+                        view_distance=1.5):
     # capture = None : no capture
     # capture = 0 : capture each frame as a png
     # capture > 0 : capture N frame in a video
@@ -104,9 +105,8 @@ def render_segmentation(image,
     glEnable(GL_DEPTH_TEST)
 
     # camera
-    view = place_camera(image.shape[0], image.shape[1], image.shape[2])
-    projection = get_projection(image.shape[0], image.shape[1], image.shape[2], w_width / w_height)
-    # projection = matrix44.create_perspective_projection_matrix(60.0, w_width / w_height, 10, 3000.0)
+    view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance)
+    projection = get_projection(image.shape[0], image.shape[1], image.shape[2], w_width / w_height, view_distance)
 
     # voxel shader uniforms
     glUseProgram(voxel_shader)
@@ -166,9 +166,10 @@ def render_segmentation(image,
             rot = matrix44.create_from_y_rotation(0.2 * glfw.get_time())
             model = matrix44.create_from_translation(Vector3([0.0, 0.0, 0.0]))
             model = matrix44.multiply(model, rot)
+            # camera
             x_cap, y_cap, width_cap, height_cap = glGetDoublev(GL_VIEWPORT)
-            view = place_camera(image.shape[0], image.shape[1], image.shape[2])
-            projection = get_projection(image.shape[0], image.shape[1], image.shape[2], width_cap / height_cap)
+            view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance)
+            projection = get_projection(image.shape[0], image.shape[1], image.shape[2], width_cap / height_cap, view_distance)
             glBindTexture(GL_TEXTURE_2D, texture)
             image_data = image[:, count - countdown + 1, :]
             image_data = image_data.flatten().astype(np.float32)
@@ -247,17 +248,19 @@ def window_resize(window, width, height):
 
     return
 
-def place_camera(imageX, imageY, imageZ):
-	# max_dim
-	height = 0.65
-	diag = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2) 
-	# distance = 2 * (imageX if imageX > imageZ else imageZ)
-	camera_pos = Vector3([0.0, imageY * height, 1.4 * -diag])
-	camera_target = Vector3([0.0, 0.0, 0.0])
-	camera_front = vector.normalise(camera_target - camera_pos)
 
-	return matrix44.create_look_at(camera_pos, camera_pos + camera_front, Vector3([0.0, 1.0, 0.0]))
+def place_camera(imageX, imageY, imageZ, view_distance):
+    # max_dim
+    height = 0.65
+    diag = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2)
+    # distance = 2 * (imageX if imageX > imageZ else imageZ)
+    camera_pos = Vector3([0.0, imageY * height, view_distance * -diag])
+    camera_target = Vector3([0.0, 0.0, 0.0])
+    camera_front = vector.normalise(camera_target - camera_pos)
 
-def get_projection(imageX, imageY, imageZ, ratio):
-    max_dist = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2) 
-    return matrix44.create_perspective_projection_matrix(45.0, ratio, 10, max_dist * 2)
+    return matrix44.create_look_at(camera_pos, camera_pos + camera_front, Vector3([0.0, 1.0, 0.0]))
+
+
+def get_projection(imageX, imageY, imageZ, ratio, view_distance):
+    max_dist = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2)
+    return matrix44.create_perspective_projection_matrix(45.0, ratio, 10, max_dist * 2 * view_distance)
