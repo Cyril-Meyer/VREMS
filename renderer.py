@@ -25,13 +25,16 @@ def render_segmentation(image,
     if capture is not None:
         capture_img = []
 
+    # todo : alpha only image
+    alpha_image = 0.8
+
     # compute scene center point
     scene_center = [image.shape[0] / 2, image.shape[1] / 2, image.shape[2] / 2]
 
     # initialization of GLFW
     if not glfw.init():
         return
-    # todo : resizable
+    
     glfw.window_hint(glfw.RESIZABLE, GL_TRUE)
     glfw.window_hint(glfw.SAMPLES, 8)
     w_width, w_height = 1000, 800
@@ -246,8 +249,10 @@ def render_segmentation(image,
     model_loc_texbox = glGetUniformLocation(texbox_shader, "model")
     max_height_loc_texbox = glGetUniformLocation(texbox_shader, "max_height")
     center_loc_texbox = glGetUniformLocation(texbox_shader, "center")
+    alpha_loc_texbox = glGetUniformLocation(texbox_shader, "alpha")
 
     glUniform3f(center_loc_texbox, scene_center[0], scene_center[1], scene_center[2])
+    glUniform1f(alpha_loc_texbox, alpha_image)
 
 
     texture = glGenTextures(1)
