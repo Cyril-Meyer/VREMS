@@ -16,6 +16,7 @@ def render_segmentation(image,
                         capture=None,
                         output=None,
                         view_distance=1.5,
+                        rotation_speed=1.0,
                         only_image=False):
     # capture = None : no capture
     # capture = 0 : capture each frame as a png
@@ -327,7 +328,7 @@ def render_segmentation(image,
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glPolygonMode(GL_FRONT, GL_FILL)
 
-            rot = matrix44.create_from_y_rotation(0.2 * glfw.get_time())
+            rot = matrix44.create_from_y_rotation(((rotation_speed*2*np.pi)*frame_n)/image.shape[1])
             model = matrix44.create_from_translation(Vector3([0.0, 0.0, 0.0]))
             model = matrix44.multiply(model, rot)
             # camera
