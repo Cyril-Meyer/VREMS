@@ -2,7 +2,7 @@ import numpy as np
 
 import glfw
 from OpenGL.GL import *
-from pyrr import matrix44, Matrix44, Vector3
+from pyrr import matrix44, Matrix44, Vector3, vector
 from PIL import Image
 import cv2
 
@@ -104,8 +104,8 @@ def render_segmentation(image,
     glEnable(GL_DEPTH_TEST)
 
     # camera
-    view = matrix44.create_look_at(Vector3([0, 500, -1000]), Vector3([0, -0.72, 0.72]), Vector3([0, 0.72, -0.72]))
-    projection = matrix44.create_perspective_projection_matrix(45.0, w_width / w_height, 0.1, 1500.0)
+    view = place_camera(image.shape[0], image.shape[1], image.shape[2])
+    projection = matrix44.create_perspective_projection_matrix(45.0, w_width / w_height, 10, 3000.0)
 
     # voxel shader uniforms
     glUseProgram(voxel_shader)
@@ -239,3 +239,13 @@ def window_resize(window, width, height):
     glViewport(0, 0, width, height)
 
     return
+
+def place_camera(imageX, imageY, imageZ):
+	distance = 2 * (imageX if imageX > imageZ else imageZ)
+	camera_pos = Vector3([0.0, imageY * 0.8, -distance])
+	camera_target = Vector3([0.0, 0.0, 0.0])
+	camera_front = vector.normalise(camera_target - camera_pos)
+
+	return matrix44.create_look_at(camera_pos, camera_pos + camera_front, Vector3([0.0, 1.0, 0.0]))
+
+
