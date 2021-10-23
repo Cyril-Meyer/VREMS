@@ -87,28 +87,28 @@ def render_segmentation(image,
     glEnableVertexAttribArray(texCoord)
 
     texbox0_vertices = np.array([
-        0.0, 0.0, 0.0,  0.0, 0.0,  
+        0.0, 0.0, 0.0,  0.0, 0.0,
         0.0, 0.0, image.shape[2],  1.0, 0.0,
         0.0, image.shape[1], image.shape[2],  1.0, 1.0,
         0.0, image.shape[1], 0.0,  0.0, 1.0
     ], dtype=np.float32)
 
     texbox1_vertices = np.array([
-        0.0, 0.0, image.shape[2],  0.0, 0.0,  
+        0.0, 0.0, image.shape[2],  0.0, 0.0,
         image.shape[0], 0.0, image.shape[2],  1.0, 0.0,
         image.shape[0], image.shape[1], image.shape[2],  1.0, 1.0,
         0.0, image.shape[1], image.shape[2],  0.0, 1.0
     ], dtype=np.float32)
 
     texbox2_vertices = np.array([
-        image.shape[0], 0.0, image.shape[2],  0.0, 0.0,  
+        image.shape[0], 0.0, image.shape[2],  0.0, 0.0,
         image.shape[0], 0.0, 0.0,  1.0, 0.0,
         image.shape[0], image.shape[1], 0.0,  1.0, 1.0,
         image.shape[0], image.shape[1], image.shape[2],  0.0, 1.0
     ], dtype=np.float32)
 
     texbox3_vertices = np.array([
-        image.shape[0], 0.0, 0.0,  0.0, 0.0,  
+        image.shape[0], 0.0, 0.0,  0.0, 0.0,
         0.0, 0.0, 0.0,  1.0, 0.0,
         0.0, image.shape[1], 0.0,  1.0, 1.0,
         image.shape[0], image.shape[1], 0.0,  0.0, 1.0
@@ -268,9 +268,9 @@ def render_segmentation(image,
         # set texture filtering parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image_data = image[:, :, 0]
+        image_data = image[0, :, :]
         image_data = image_data.flatten().astype(np.float32)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[1], 0, GL_RED, GL_FLOAT, image_data)
 
         texture1 = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, texture1)
@@ -280,9 +280,9 @@ def render_segmentation(image,
         # set texture filtering parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image_data = image[:, :, 0]
+        image_data = np.flip(np.rot90(image[:, :, -1]), 0)
         image_data = image_data.flatten().astype(np.float32)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[0], image.shape[1], 0, GL_RED, GL_FLOAT, image_data)
 
         texture2 = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, texture2)
@@ -292,9 +292,9 @@ def render_segmentation(image,
         # set texture filtering parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image_data = image[:, :, 0]
+        image_data = np.flip(image[-1, :, :], 1)
         image_data = image_data.flatten().astype(np.float32)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[1], 0, GL_RED, GL_FLOAT, image_data)
 
         texture3 = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, texture3)
@@ -304,9 +304,9 @@ def render_segmentation(image,
         # set texture filtering parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        image_data = image[:, :, 0]
+        image_data = np.flip(np.flip(np.rot90(image[:, :, 0]), 0), 1)
         image_data = image_data.flatten().astype(np.float32)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[0], image.shape[1], 0, GL_RED, GL_FLOAT, image_data)
 
     # load image
     glEnable(GL_DEPTH_TEST)

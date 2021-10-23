@@ -18,6 +18,6 @@ utils.print_stack_info(label_2)
 utils.print_stack_info(label_3)
 
 labels = [utils.get_contours(label_1), utils.get_contours(label_2), utils.get_contours(label_3)]
-labels_colors = [[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.4], [0.0, 0.0, 1.0, 1.0]]
+labels_colors = [[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 0.2], [0.0, 0.0, 1.0, 0.3]]
 
-renderer.render_segmentation(image, labels, labels_colors)
+renderer.render_segmentation(image, labels, labels_colors, only_image=True, rotation_speed=2)
