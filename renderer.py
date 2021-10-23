@@ -9,10 +9,6 @@ import shader
 
 def render_segmentation(image, labels, labels_colors):
     scene_center = [image.shape[0] / 2, image.shape[1] / 2, image.shape[2] / 2]
-    # todo : param as number of labels
-    nb_voxels1 = np.sum(labels[0])
-    nb_voxels2 = np.sum(labels[1])
-    nb_voxels3 = np.sum(labels[2])
 
     # initialization of GLFW
     if not glfw.init():
@@ -71,45 +67,24 @@ def render_segmentation(image, labels, labels_colors):
     glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, vertices.itemsize * 5, ctypes.c_void_p(12))
     glEnableVertexAttribArray(texCoord)
 
-    voxels = []
+    array_nb_voxels = []
+    array_vertex_array_object = []
+
     for label in labels:
-        voxels.append(np.argwhere(label).flatten().astype(np.float32))
+        array_nb_voxels.append(np.sum(label))
+        voxels = np.argwhere(label).flatten().astype(np.float32)
 
-    # label 1
-    VAO1 = glGenVertexArrays(1)
-    glBindVertexArray(VAO1)
+        vao = glGenVertexArrays(1)
+        glBindVertexArray(vao)
 
-    VBO1 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1)
-    glBufferData(GL_ARRAY_BUFFER, voxels[0].itemsize * len(voxels[0]), voxels[0], GL_STATIC_DRAW)
+        vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, voxels.itemsize * len(voxels), voxels, GL_STATIC_DRAW)
 
-    position1 = glGetAttribLocation(voxel_shader, "position")
-    glVertexAttribPointer(position1, 3, GL_FLOAT, GL_FALSE, voxels[0].itemsize * 3, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position1)
-
-    # label 2
-    VAO2 = glGenVertexArrays(1)
-    glBindVertexArray(VAO2)
-
-    VBO2 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2)
-    glBufferData(GL_ARRAY_BUFFER, voxels[1].itemsize * len(voxels[1]), voxels[1], GL_STATIC_DRAW)
-
-    position2 = glGetAttribLocation(voxel_shader, "position")
-    glVertexAttribPointer(position2, 3, GL_FLOAT, GL_FALSE, voxels[1].itemsize * 3, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position2)
-
-    # label 3
-    VAO3 = glGenVertexArrays(1)
-    glBindVertexArray(VAO3)
-
-    VBO3 = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO3)
-    glBufferData(GL_ARRAY_BUFFER, voxels[2].itemsize * len(voxels[2]), voxels[2], GL_STATIC_DRAW)
-
-    position3 = glGetAttribLocation(voxel_shader, "position")
-    glVertexAttribPointer(position3, 3, GL_FLOAT, GL_FALSE, voxels[2].itemsize * 3, ctypes.c_void_p(0))
-    glEnableVertexAttribArray(position3)
+        position = glGetAttribLocation(voxel_shader, "position")
+        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, voxels.itemsize * 3, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position)
+        array_vertex_array_object.append(vao)
 
     glClearColor(0.5, 0.5, 0.5, 1.0)
     glEnable(GL_DEPTH_TEST)
@@ -206,17 +181,14 @@ def render_segmentation(image, labels, labels_colors):
             glUniformMatrix4fv(model_loc_voxel, 1, GL_FALSE, model)
             glUniform1f(max_height_loc_voxel, count)
 
-            glBindVertexArray(VAO1)
-            glUniform4f(label_color_loc_voxel, labels_colors[0][0], labels_colors[0][1], labels_colors[0][2], labels_colors[0][3])
-            glDrawArrays(GL_POINTS, 0, nb_voxels1)
-
-            glBindVertexArray(VAO2)
-            glUniform4f(label_color_loc_voxel, labels_colors[1][0], labels_colors[1][1], labels_colors[1][2], labels_colors[1][3])
-            glDrawArrays(GL_POINTS, 0, nb_voxels2)
-
-            glBindVertexArray(VAO3)
-            glUniform4f(label_color_loc_voxel, labels_colors[2][0], labels_colors[2][1], labels_colors[2][2], labels_colors[2][3])
-            glDrawArrays(GL_POINTS, 0, nb_voxels3)
+            for i in range(len(labels)):
+                glBindVertexArray(array_vertex_array_object[i])
+                glUniform4f(label_color_loc_voxel,
+                            labels_colors[i][0],
+                            labels_colors[i][1],
+                            labels_colors[i][2],
+                            labels_colors[i][3])
+                glDrawArrays(GL_POINTS, 0, array_nb_voxels[i])
 
             glfw.swap_buffers(window)
             count += int(count < image.shape[1] - 1)
