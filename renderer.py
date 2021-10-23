@@ -166,7 +166,7 @@ def render_segmentation(image, labels, labels_colors):
             # image_data = image_data[::2]
             # print(image_data, image_data.shape)
             # img_data = numpy.array(list(image.getdata()), numpy.uint8)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[0], image.shape[2], 0, GL_RED, GL_FLOAT, image_data)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
 
             glUseProgram(slice_shader)
             glActiveTexture(GL_TEXTURE0)
