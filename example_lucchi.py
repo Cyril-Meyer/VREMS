@@ -1,14 +1,15 @@
 import os
 import sys
 
+import numpy as np
 import tifffile
 
 import utils
 import renderer
 
 # read data
-image = tifffile.imread("VREMS-data/lucchi/image.tif")
-label = tifffile.imread("VREMS-data/lucchi/label.tif")
+image = (tifffile.imread("VREMS-data/lucchi/image.tif")/255).astype(np.float32)
+label = (tifffile.imread("VREMS-data/lucchi/label.tif")/255).astype(np.uint8)
 
 utils.print_stack_info(image)
 utils.print_stack_info(label)
