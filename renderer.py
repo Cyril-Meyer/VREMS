@@ -67,15 +67,15 @@ def render_segmentation(image,
     slice_indices = np.array(slice_indices, dtype=np.uint32)
 
     # geometry data
-    VAOS = glGenVertexArrays(1)
-    glBindVertexArray(VAOS)
+    vaos = glGenVertexArrays(1)
+    glBindVertexArray(vaos)
 
-    VBOS = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, VBOS)
+    vbos = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, vbos)
     glBufferData(GL_ARRAY_BUFFER, slice_vertices.itemsize * len(slice_vertices), slice_vertices, GL_STATIC_DRAW)
 
-    EBOS = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+    ebos = glGenBuffers(1)
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebos)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
 
     positionS = glGetAttribLocation(slice_shader, "position")
@@ -119,7 +119,7 @@ def render_segmentation(image,
                      GL_STATIC_DRAW)
 
         EBO_texbox1 = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebos)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
                      GL_STATIC_DRAW)
 
@@ -139,7 +139,7 @@ def render_segmentation(image,
                      GL_STATIC_DRAW)
 
         EBO_texbox2 = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebos)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
                      GL_STATIC_DRAW)
 
@@ -159,7 +159,7 @@ def render_segmentation(image,
                      GL_STATIC_DRAW)
 
         EBO_texbox3 = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebos)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
                      GL_STATIC_DRAW)
 
@@ -326,7 +326,7 @@ def render_segmentation(image,
 
             glUseProgram(slice_shader)
             glActiveTexture(GL_TEXTURE0)
-            glBindVertexArray(VAOS)
+            glBindVertexArray(vaos)
             glBindTexture(GL_TEXTURE_2D, texture)
             glUniformMatrix4fv(view_loc_slice, 1, GL_FALSE, view)
             glUniformMatrix4fv(model_loc_slice, 1, GL_FALSE, model)
