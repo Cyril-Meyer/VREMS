@@ -25,4 +25,11 @@ utils.print_stack_info(np.array(labels_array))
 
 labels_colors = utils.get_colormap(len(np.unique(labels)), alpha=0.25)
 
-renderer.render_segmentation(image, labels_array, labels_colors)
+renderer.render_segmentation(image,
+                             labels_array,
+                             labels_colors,
+                             rotation_speed=0.5,
+                             view_distance=1.0,
+                             capture=1800,
+                             output="heinrich.mp4",
+                             video_fps=60)

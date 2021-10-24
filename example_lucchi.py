@@ -20,4 +20,11 @@ utils.print_stack_info(label)
 labels = [utils.get_contours(label)]
 labels_colors = [[1.0, 0.0, 0.0, 1.0]]
 
-renderer.render_segmentation(image, labels, labels_colors)
+renderer.render_segmentation(image,
+                             labels,
+                             labels_colors,
+                             rotation_speed=0.5,
+                             view_distance=1.0,
+                             capture=1800,
+                             output="lucchi.mp4",
+                             video_fps=60)

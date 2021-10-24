@@ -30,4 +30,7 @@ labels_colors = [[1.0, 0.0, 0.0, 1.0],
                  [0.0, 0.0, 1.0, 0.5],
                  [0.0, 1.0, 0.0, 0.25]]
 
-renderer.render_segmentation(image, labels, labels_colors, rotation_speed=0.20)
+renderer.render_segmentation(image,
+                             labels,
+                             labels_colors,
+                             rotation_speed=0.20)
