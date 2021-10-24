@@ -1,0 +1,3 @@
+[submodule "VREMS-data"]
+	path = VREMS-data
+	url = https://git.unistra.fr/cymeyer/VREMS-data.git
