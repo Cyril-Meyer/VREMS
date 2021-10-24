@@ -1,3 +1,5 @@
+import logging
+
 from OpenGL.GL import shaders
 from OpenGL.GL import *
 
@@ -22,43 +24,42 @@ def compile_shader(vs, fs):
 
 
 def compile_shader_geometry(vs, fs, gs):
-    print("compile start")
+    logging.debug("[shader-geometry] compile start")
     vertex_shader = load_shader(vs)
     fragment_shader = load_shader(fs)
     geom_shader = load_shader(gs)
-
     shader = glCreateProgram()
 
     vertex = shaders.compileShader(vertex_shader, GL_VERTEX_SHADER)
     glAttachShader(shader, vertex)
     siv = glGetShaderiv(vertex, GL_COMPILE_STATUS)
-    print(siv)
-    print("vertex compiled")
-    # print(glGetShaderInfoLog(vertex))
+    logging.debug("[shader-geometry] vertex compiled")
+
     fragment = shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER)
     glAttachShader(shader, fragment)
     siv = glGetShaderiv(fragment, GL_COMPILE_STATUS)
-    print(siv)
-    print("fragment compiled")
+    logging.debug("[shader-geometry] fragment compiled")
+
     geometry = shaders.compileShader(geom_shader, GL_GEOMETRY_SHADER)
     glAttachShader(shader, geometry)
     siv = glGetShaderiv(geometry, GL_COMPILE_STATUS)
-    print(siv)
-    print("geometry compiled")
+    logging.debug("[shader-geometry] geometry compiled")
+
     glLinkProgram(shader)
     piv = glGetProgramiv(shader, GL_LINK_STATUS)
-    print(glGetProgramInfoLog(shader))
-    print("program linked")
-    print(piv)
+    logging.debug(glGetProgramInfoLog(shader))
+    logging.debug("[shader-geometry] program linked")
+
     glValidateProgram(shader)
     glDetachShader(shader, vertex)
     glDetachShader(shader, fragment)
     glDetachShader(shader, geometry)
-    print("shaders detached")
+    logging.debug("[shader-geometry] detached")
+
     glDeleteShader(vertex)
     glDeleteShader(fragment)
     glDeleteShader(geometry)
-    print("shaders deleted")
-    # glUseProgram(shader)
-    print("compile end")
+    logging.debug("[shader-geometry] deleted")
+
+    logging.debug("[shader-geometry] compile end")
     return shader
