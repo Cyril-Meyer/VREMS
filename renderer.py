@@ -15,6 +15,7 @@ def render_segmentation(image,
                         background_color=(0.15, 0.15, 0.15, 1.0),
                         capture=None,
                         output=None,
+                        video_fps=24,
                         view_distance=1.5,
                         rotation_speed=1.0,
                         only_image=False):
@@ -34,7 +35,7 @@ def render_segmentation(image,
     # initialization of GLFW
     if not glfw.init():
         return
-    
+
     glfw.window_hint(glfw.RESIZABLE, GL_TRUE)
     glfw.window_hint(glfw.SAMPLES, 8)
     w_width, w_height = 1000, 800
@@ -56,17 +57,13 @@ def render_segmentation(image,
     slice_shader = shader.compile_shader("shaders/slice_vertex_shader.vs",
                                          "shaders/slice_frag_shader.fs")
     texbox_shader = shader.compile_shader("shaders/texbox_vertex_shader.vs",
-                                         "shaders/texbox_frag_shader.fs")
+                                          "shaders/texbox_frag_shader.fs")
 
     # slice plane
-    slice_vertices = [0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, image.shape[2], 1.0, 0.0,
-                image.shape[0], 0.0, image.shape[2], 1.0, 1.0,
-                image.shape[0], 0.0, 0.0, 0.0, 1.0]
+    slice_vertices, texbox0_vertices, texbox1_vertices, texbox2_vertices, texbox3_vertices = get_vertices(image.shape)
 
-    slice_vertices = np.array(slice_vertices, dtype=np.float32)
     slice_indices = [0, 1, 2,
-               0, 2, 3]
+                     0, 2, 3]
     slice_indices = np.array(slice_indices, dtype=np.uint32)
 
     # geometry data
@@ -89,37 +86,8 @@ def render_segmentation(image,
     glVertexAttribPointer(texCoord, 2, GL_FLOAT, GL_FALSE, slice_vertices.itemsize * 5, ctypes.c_void_p(12))
     glEnableVertexAttribArray(texCoord)
 
-    texbox0_vertices = np.array([
-        0.0, 0.0, 0.0,  0.0, 0.0,
-        0.0, 0.0, image.shape[2],  1.0, 0.0,
-        0.0, image.shape[1], image.shape[2],  1.0, 1.0,
-        0.0, image.shape[1], 0.0,  0.0, 1.0
-    ], dtype=np.float32)
-
-    texbox1_vertices = np.array([
-        0.0, 0.0, image.shape[2],  0.0, 0.0,
-        image.shape[0], 0.0, image.shape[2],  1.0, 0.0,
-        image.shape[0], image.shape[1], image.shape[2],  1.0, 1.0,
-        0.0, image.shape[1], image.shape[2],  0.0, 1.0
-    ], dtype=np.float32)
-
-    texbox2_vertices = np.array([
-        image.shape[0], 0.0, image.shape[2],  0.0, 0.0,
-        image.shape[0], 0.0, 0.0,  1.0, 0.0,
-        image.shape[0], image.shape[1], 0.0,  1.0, 1.0,
-        image.shape[0], image.shape[1], image.shape[2],  0.0, 1.0
-    ], dtype=np.float32)
-
-    texbox3_vertices = np.array([
-        image.shape[0], 0.0, 0.0,  0.0, 0.0,
-        0.0, 0.0, 0.0,  1.0, 0.0,
-        0.0, image.shape[1], 0.0,  1.0, 1.0,
-        image.shape[0], image.shape[1], 0.0,  0.0, 1.0
-    ], dtype=np.float32)
-
     position_texbox = glGetAttribLocation(texbox_shader, "position")
     texCoord_texbox = glGetAttribLocation(texbox_shader, "inTexCoord")
-
 
     if only_image:
         VAO_texbox0 = glGenVertexArrays(1)
@@ -127,16 +95,19 @@ def render_segmentation(image,
 
         VBO_texbox0 = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox0)
-        glBufferData(GL_ARRAY_BUFFER, texbox0_vertices.itemsize * len(texbox0_vertices), texbox0_vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, texbox0_vertices.itemsize * len(texbox0_vertices), texbox0_vertices,
+                     GL_STATIC_DRAW)
 
         EBO_texbox0 = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_texbox0)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
+                     GL_STATIC_DRAW)
 
         glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5, ctypes.c_void_p(0))
         glEnableVertexAttribArray(position_texbox)
 
-        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox0_vertices.itemsize * 5,
+                              ctypes.c_void_p(12))
         glEnableVertexAttribArray(texCoord_texbox)
 
         VAO_texbox1 = glGenVertexArrays(1)
@@ -144,16 +115,19 @@ def render_segmentation(image,
 
         VBO_texbox1 = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox1)
-        glBufferData(GL_ARRAY_BUFFER, texbox1_vertices.itemsize * len(texbox1_vertices), texbox1_vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, texbox1_vertices.itemsize * len(texbox1_vertices), texbox1_vertices,
+                     GL_STATIC_DRAW)
 
         EBO_texbox1 = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
+                     GL_STATIC_DRAW)
 
         glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5, ctypes.c_void_p(0))
         glEnableVertexAttribArray(position_texbox)
 
-        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox1_vertices.itemsize * 5,
+                              ctypes.c_void_p(12))
         glEnableVertexAttribArray(texCoord_texbox)
 
         VAO_texbox2 = glGenVertexArrays(1)
@@ -161,16 +135,19 @@ def render_segmentation(image,
 
         VBO_texbox2 = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox2)
-        glBufferData(GL_ARRAY_BUFFER, texbox2_vertices.itemsize * len(texbox2_vertices), texbox2_vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, texbox2_vertices.itemsize * len(texbox2_vertices), texbox2_vertices,
+                     GL_STATIC_DRAW)
 
         EBO_texbox2 = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
+                     GL_STATIC_DRAW)
 
         glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5, ctypes.c_void_p(0))
         glEnableVertexAttribArray(position_texbox)
 
-        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox2_vertices.itemsize * 5,
+                              ctypes.c_void_p(12))
         glEnableVertexAttribArray(texCoord_texbox)
 
         VAO_texbox3 = glGenVertexArrays(1)
@@ -178,16 +155,19 @@ def render_segmentation(image,
 
         VBO_texbox3 = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, VBO_texbox3)
-        glBufferData(GL_ARRAY_BUFFER, texbox3_vertices.itemsize * len(texbox3_vertices), texbox3_vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, texbox3_vertices.itemsize * len(texbox3_vertices), texbox3_vertices,
+                     GL_STATIC_DRAW)
 
         EBO_texbox3 = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOS)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, slice_indices.itemsize * len(slice_indices), slice_indices,
+                     GL_STATIC_DRAW)
 
         glVertexAttribPointer(position_texbox, 3, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5, ctypes.c_void_p(0))
         glEnableVertexAttribArray(position_texbox)
 
-        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5, ctypes.c_void_p(12))
+        glVertexAttribPointer(texCoord_texbox, 2, GL_FLOAT, GL_FALSE, texbox3_vertices.itemsize * 5,
+                              ctypes.c_void_p(12))
         glEnableVertexAttribArray(texCoord_texbox)
 
     array_nb_voxels = []
@@ -209,7 +189,6 @@ def render_segmentation(image,
         glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, voxels.itemsize * 3, ctypes.c_void_p(0))
         glEnableVertexAttribArray(position)
         array_vertex_array_object.append(vao)
-
 
     # camera
     view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance)
@@ -253,7 +232,6 @@ def render_segmentation(image,
 
     glUniform3f(center_loc_texbox, scene_center[0], scene_center[1], scene_center[2])
     glUniform1f(alpha_loc_texbox, alpha_image)
-
 
     texture = glGenTextures(1)
     glBindTexture(GL_TEXTURE_2D, texture)
@@ -333,13 +311,14 @@ def render_segmentation(image,
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glPolygonMode(GL_FRONT, GL_FILL)
 
-            rot = matrix44.create_from_y_rotation(((rotation_speed*2*np.pi)*frame_n)/image.shape[1])
+            rot = matrix44.create_from_y_rotation(((rotation_speed * 2 * np.pi) * frame_n) / image.shape[1])
             model = matrix44.create_from_translation(Vector3([0.0, 0.0, 0.0]))
             model = matrix44.multiply(model, rot)
             # camera
             x_cap, y_cap, width_cap, height_cap = glGetDoublev(GL_VIEWPORT)
             view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance)
-            projection = get_projection(image.shape[0], image.shape[1], image.shape[2], width_cap / height_cap, view_distance)
+            projection = get_projection(image.shape[0], image.shape[1], image.shape[2], width_cap / height_cap,
+                                        view_distance)
             glBindTexture(GL_TEXTURE_2D, texture)
             image_data = image[:, count - countdown + 1, :]
             image_data = image_data.flatten().astype(np.float32)
@@ -392,7 +371,6 @@ def render_segmentation(image,
                 glBindTexture(GL_TEXTURE_2D, texture3)
                 glDrawElements(GL_TRIANGLES, len(slice_indices), GL_UNSIGNED_INT, None)
 
-
             # capture system
             if capture is not None:
                 x_cap, y_cap, width_cap, height_cap = glGetDoublev(GL_VIEWPORT)
@@ -414,7 +392,7 @@ def render_segmentation(image,
                     # convert saved frame in video
                     capture_img.append(image_cap)
                     fourcc = cv2.VideoWriter_fourcc(*'avc1')
-                    video = cv2.VideoWriter(output, fourcc, 60, (width_cap, height_cap))
+                    video = cv2.VideoWriter(output, fourcc, video_fps, (width_cap, height_cap))
                     for tmp in capture_img:
                         video.write(cv2.cvtColor(np.array(tmp), cv2.COLOR_RGB2BGR))
                     video.release()
@@ -455,3 +433,46 @@ def place_camera(imageX, imageY, imageZ, view_distance):
 def get_projection(imageX, imageY, imageZ, ratio, view_distance):
     max_dist = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2)
     return matrix44.create_perspective_projection_matrix(45.0, ratio, 10, max_dist * 2 * view_distance)
+
+
+def get_vertices(image_shape):
+    slice_vertices = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, image_shape[2], 1.0, 0.0,
+        image_shape[0], 0.0, image_shape[2], 1.0, 1.0,
+        image_shape[0], 0.0, 0.0, 0.0, 1.0
+    ], dtype=np.float32)
+
+    texbox0_vertices = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, image_shape[2], 1.0, 0.0,
+        0.0, image_shape[1], image_shape[2], 1.0, 1.0,
+        0.0, image_shape[1], 0.0, 0.0, 1.0
+    ], dtype=np.float32)
+
+    texbox1_vertices = np.array([
+        0.0, 0.0, image_shape[2], 0.0, 0.0,
+        image_shape[0], 0.0, image_shape[2], 1.0, 0.0,
+        image_shape[0], image_shape[1], image_shape[2], 1.0, 1.0,
+        0.0, image_shape[1], image_shape[2], 0.0, 1.0
+    ], dtype=np.float32)
+
+    texbox2_vertices = np.array([
+        image_shape[0], 0.0, image_shape[2], 0.0, 0.0,
+        image_shape[0], 0.0, 0.0, 1.0, 0.0,
+        image_shape[0], image_shape[1], 0.0, 1.0, 1.0,
+        image_shape[0], image_shape[1], image_shape[2], 0.0, 1.0
+    ], dtype=np.float32)
+
+    texbox3_vertices = np.array([
+        image_shape[0], 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 1.0, 0.0,
+        0.0, image_shape[1], 0.0, 1.0, 1.0,
+        image_shape[0], image_shape[1], 0.0, 0.0, 1.0
+    ], dtype=np.float32)
+
+    return (slice_vertices,
+            texbox0_vertices,
+            texbox1_vertices,
+            texbox2_vertices,
+            texbox3_vertices)
