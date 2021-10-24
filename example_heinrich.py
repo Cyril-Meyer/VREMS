@@ -1,10 +1,13 @@
 import os
 import sys
+import logging
 
 import numpy as np
 
 import utils
 import renderer
+
+logging.basicConfig(level=logging.DEBUG)
 
 # read data
 image = np.load("VREMS-data/heinrich/image_jrc_hela-2_crop3.npy")

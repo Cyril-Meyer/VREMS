@@ -1,11 +1,14 @@
 import os
 import sys
+import logging
 
 import numpy as np
 import tifffile
 
 import utils
 import renderer
+
+logging.basicConfig(level=logging.DEBUG)
 
 # read data
 image = (tifffile.imread("VREMS-data/lucchi/image.tif")/255).astype(np.float32)
