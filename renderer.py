@@ -51,13 +51,13 @@ def render_segmentation(image,
     glfw.swap_interval(1)
 
     # compile shaders
-    voxel_shader = shader.compile_shader_geometry("shaders/voxel_vertex_shader.vs",
-                                                  "shaders/voxel_frag_shader.fs",
-                                                  "shaders/voxel_geo_shader.gs")
-    slice_shader = shader.compile_shader("shaders/slice_vertex_shader.vs",
-                                         "shaders/slice_frag_shader.fs")
-    texbox_shader = shader.compile_shader("shaders/texbox_vertex_shader.vs",
-                                          "shaders/texbox_frag_shader.fs")
+    voxel_shader = shader.compile_shader_geometry("shaders/voxel_shader.vs",
+                                                  "shaders/voxel_shader.fs",
+                                                  "shaders/voxel_shader.gs")
+    slice_shader = shader.compile_shader("shaders/slice_shader.vs",
+                                         "shaders/slice_shader.fs")
+    texbox_shader = shader.compile_shader("shaders/texbox_shader.vs",
+                                          "shaders/texbox_shader.fs")
 
     # slice plane
     slice_vertices, texbox0_vertices, texbox1_vertices, texbox2_vertices, texbox3_vertices = get_vertices(image.shape)
