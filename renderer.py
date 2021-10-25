@@ -14,6 +14,7 @@ def render_segmentation(image,
                         labels_colors,
                         background_color=(0.15, 0.15, 0.15, 1.0),
                         capture=None,
+                        oversampling=1,
                         output=None,
                         video_fps=24,
                         view_distance=1.5,
@@ -58,6 +59,12 @@ def render_segmentation(image,
                                          "shaders/slice_shader.fs")
     texbox_shader = shader.compile_shader("shaders/texbox_shader.vs",
                                           "shaders/texbox_shader.fs")
+    screen_shader = shader.compile_shader("shaders/fbo_shader.vs",
+                                          "shaders/fbo_shader.fs")
+
+    # creating off window buffer and screen display
+    vao_screen = create_screen_display_quad(screen_shader)
+    FBOms, FBOpp, TEXpp = create_offwindow_buffers(oversampling * w_width, oversampling * w_height, 8)
 
     # slice plane
     slice_vertices, texbox0_vertices, texbox1_vertices, texbox2_vertices, texbox3_vertices = get_vertices(image.shape)
@@ -164,16 +171,10 @@ def render_segmentation(image,
     redisplay = True
     frame_n = 0
 
+    glPolygonMode(GL_FRONT, GL_FILL)
     while not glfw.window_should_close(window):
         frame_n += 1
         if redisplay:
-            glClearColor(background_color[0],
-                         background_color[1],
-                         background_color[2],
-                         background_color[2])
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            glPolygonMode(GL_FRONT, GL_FILL)
-
             rot = matrix44.create_from_y_rotation(((rotation_speed * 2 * np.pi) * frame_n) / image.shape[1])
             model = matrix44.create_from_translation(Vector3([0.0, 0.0, 0.0]))
             model = matrix44.multiply(model, rot)
@@ -186,6 +187,18 @@ def render_segmentation(image,
             image_data = image[:, count - countdown + 1, :]
             image_data = image_data.flatten().astype(np.float32)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image.shape[2], image.shape[0], 0, GL_RED, GL_FLOAT, image_data)
+
+
+            #offscreen rendering
+            glViewport(0, 0, w_width * oversampling, w_height * oversampling)
+            glBindFramebuffer(GL_FRAMEBUFFER, FBOms)
+            glClearColor(background_color[0],
+                         background_color[1],
+                         background_color[2],
+                         1.0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+
 
             glUseProgram(slice_shader)
             glActiveTexture(GL_TEXTURE0)
@@ -234,12 +247,34 @@ def render_segmentation(image,
                 glBindTexture(GL_TEXTURE_2D, texture3)
                 glDrawElements(GL_TRIANGLES, len(slice_indices), GL_UNSIGNED_INT, None)
 
+            swap_buffers(FBOms, FBOpp, w_width * oversampling, w_height * oversampling)
+            glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+            # onscreen rendering
+            glViewport(0, 0, w_width, w_height)
+            glClearColor(1.0,
+                         0.0,
+                         0.0,
+                         1.0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            glViewport(0, 0, w_width, w_height)
+            glBindTexture(GL_TEXTURE_2D, TEXpp)
+
+            glUseProgram(screen_shader)
+            glBindVertexArray(vao_screen)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+
+            
+
             # capture system
             if capture is not None:
+                glViewport(0, 0, w_width * oversampling, w_height * oversampling)
                 x_cap, y_cap, width_cap, height_cap = glGetDoublev(GL_VIEWPORT)
                 width_cap, height_cap = int(width_cap), int(height_cap)
                 glPixelStorei(GL_PACK_ALIGNMENT, 1)
-                data = glReadPixels(x_cap, y_cap, width_cap, height_cap, GL_RGB, GL_UNSIGNED_BYTE)
+                glBindFramebuffer(GL_FRAMEBUFFER, FBOpp)
+                data = glReadPixels(x_cap, y_cap, w_width * oversampling, height_cap, GL_RGB, GL_UNSIGNED_BYTE)
+                glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
                 image_cap = Image.frombytes("RGB", (width_cap, height_cap), data)
                 image_cap = image_cap.transpose(Image.FLIP_TOP_BOTTOM)
@@ -341,7 +376,7 @@ def get_vertices(image_shape):
             texbox3_vertices)
 
 
-def create_object_buffer(vertices, indices, shader=None):
+def create_object_buffer(vertices, indices=None, shader=None):
     vaos = glGenVertexArrays(1)
     glBindVertexArray(vaos)
 
@@ -349,9 +384,12 @@ def create_object_buffer(vertices, indices, shader=None):
     glBindBuffer(GL_ARRAY_BUFFER, vbos)
     glBufferData(GL_ARRAY_BUFFER, vertices.itemsize * len(vertices), vertices, GL_STATIC_DRAW)
 
-    ebos = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebos)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.itemsize * len(indices), indices, GL_STATIC_DRAW)
+    if indices is not None:
+        ebos = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebos)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.itemsize * len(indices), indices, GL_STATIC_DRAW)
+    else:
+        ebos = None
 
     position_s = glGetAttribLocation(shader, "position")
     glVertexAttribPointer(position_s, 3, GL_FLOAT, GL_FALSE, vertices.itemsize * 5, ctypes.c_void_p(0))
@@ -377,3 +415,53 @@ def create_slice_texture(image_data, shape0, shape1):
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, shape0, shape1, 0, GL_RED, GL_FLOAT, image_data)
 
     return texture
+
+def create_screen_display_quad(shader):
+    quadVertices = [
+		-1.0,  1.0, 0.0, 0.0, 1.0,
+		-1.0, -1.0, 0.0, 0.0, 0.0,
+		1.0,  1.0, 0.0, 1.0, 1.0,
+		1.0, -1.0, 0.0, 1.0, 0.0
+	]
+    quadVertices = np.array(quadVertices, np.float32)
+    vao, _, _, _, _ = create_object_buffer(quadVertices, shader = shader)
+    return vao
+
+def create_offwindow_buffers(width, height, multisampling=1):
+    # multisampling frame buffer for antialiasing
+    FBOms = glGenFramebuffers(1)
+    glBindFramebuffer(GL_FRAMEBUFFER, FBOms)
+
+    # multisampling texture buffer
+    TEXms = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TEXms)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampling, GL_RGBA, width, height, GL_TRUE)
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0)
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, TEXms, 0)
+
+    # multisampling depth buffer
+    RBOms = glGenRenderbuffers(1)
+    glBindRenderbuffer(GL_RENDERBUFFER, RBOms)
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, multisampling, GL_DEPTH24_STENCIL8, width, height)
+    glBindRenderbuffer(GL_RENDERBUFFER, 0)
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBOms)
+
+    # post processed frame buffer for screen and output
+    FBOpp = glGenFramebuffers(1)
+    glBindFramebuffer(GL_FRAMEBUFFER, FBOpp)
+    # regular texture
+    TEXpp = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, TEXpp)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_FLOAT, None)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TEXpp, 0)
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    return FBOms, FBOpp, TEXpp
+
+def swap_buffers(FBOms, FBOpp, width, height):
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, FBOms)
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBOpp)
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST) 
