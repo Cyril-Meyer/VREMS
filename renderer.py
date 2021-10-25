@@ -254,7 +254,7 @@ def render_segmentation(image,
                 elif capture == frame_n:
                     # convert saved frame in video
                     capture_img.append(image_cap)
-                    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+                    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
                     video = cv2.VideoWriter(output, fourcc, video_fps, (width_cap, height_cap))
                     for tmp in capture_img:
                         video.write(cv2.cvtColor(np.array(tmp), cv2.COLOR_RGB2BGR))
@@ -281,20 +281,20 @@ def window_resize(window, width, height):
     return
 
 
-def place_camera(imageX, imageY, imageZ, view_distance):
+def place_camera(image_x, image_y, image_z, view_distance):
     # max_dim
     height = 0.65
-    diag = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2)
+    diag = np.sqrt(image_x ** 2 + image_y ** 2 + image_z ** 2)
     # distance = 2 * (imageX if imageX > imageZ else imageZ)
-    camera_pos = Vector3([0.0, imageY * height, view_distance * -diag])
+    camera_pos = Vector3([0.0, image_y * height, view_distance * -diag])
     camera_target = Vector3([0.0, 0.0, 0.0])
     camera_front = vector.normalise(camera_target - camera_pos)
 
     return matrix44.create_look_at(camera_pos, camera_pos + camera_front, Vector3([0.0, 1.0, 0.0]))
 
 
-def get_projection(imageX, imageY, imageZ, ratio, view_distance):
-    max_dist = np.sqrt(imageX ** 2 + imageY ** 2 + imageZ ** 2)
+def get_projection(image_x, image_y, image_z, ratio, view_distance):
+    max_dist = np.sqrt(image_x ** 2 + image_y ** 2 + image_z ** 2)
     return matrix44.create_perspective_projection_matrix(45.0, ratio, 10, max_dist * 2 * view_distance)
 
 
