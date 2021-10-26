@@ -5,7 +5,8 @@ layout (triangle_strip, max_vertices = 24) out;
 
 out float brightness;
 
-const vec3 lightDir = -normalize(vec3(0.0, -0.5, -0.8));
+const vec3 lightDir0 = -normalize(vec3(0.5, -0.5, -0.5));
+const vec3 lightDir1 = -normalize(vec3(-0.3, -0.7, 0.3));
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -33,7 +34,8 @@ const vec4 vert7 = vec4(-1.0, -1.0, -1.0, 0.0);
 void createVertex(vec4 offset, vec3 faceNormal){
 	vec4 worldPos = gl_in[0].gl_Position + offset;
 	gl_Position = projection * view * model * worldPos;
-	brightness = clamp(dot(lightDir, faceNormal), 0.1, 1.0);
+	//brightness = clamp(dot(lightDir0, faceNormal), 0.1, 1.0);
+	brightness = clamp(max(dot(lightDir0, faceNormal), dot(lightDir1, faceNormal)), 0.1, 1.0);
 	EmitVertex();
 }
 
