@@ -19,7 +19,8 @@ def render_segmentation(image,
                         video_fps=24,
                         view_distance=1.5,
                         rotation_speed=1.0,
-                        only_image=False):
+                        only_image=False,
+                        camera_height=0.65):
     # capture = None : no capture
     # capture = 0 : capture each frame as a png
     # capture > 0 : capture N frame in a video
@@ -108,7 +109,7 @@ def render_segmentation(image,
         array_vertex_array_object.append(vao)
 
     # camera
-    view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance)
+    view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance, height=camera_height)
     projection = get_projection(image.shape[0], image.shape[1], image.shape[2], w_width / w_height, view_distance)
 
     # voxel shader uniforms
@@ -191,7 +192,7 @@ def render_segmentation(image,
             model = matrix44.multiply(model, rot)
             # camera
             x_cap, y_cap, width_cap, height_cap = glGetDoublev(GL_VIEWPORT)
-            view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance)
+            view = place_camera(image.shape[0], image.shape[1], image.shape[2], view_distance, height=camera_height)
             projection = get_projection(image.shape[0], image.shape[1], image.shape[2], width_cap / height_cap,
                                         view_distance)
             glBindTexture(GL_TEXTURE_2D, texture)
@@ -323,9 +324,8 @@ def window_resize(window, width, height):
     return
 
 
-def place_camera(image_x, image_y, image_z, view_distance):
+def place_camera(image_x, image_y, image_z, view_distance, height):
     # max_dim
-    height = 0.65
     diag = np.sqrt(image_x ** 2 + image_y ** 2 + image_z ** 2)
     # distance = 2 * (imageX if imageX > imageZ else imageZ)
     camera_pos = Vector3([0.0, image_y * height, view_distance * -diag])
